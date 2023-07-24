@@ -1,0 +1,397 @@
+---
+title: "PREDICT SURVIVAL OF PATIENTS WITH HEART FAILURE AND OTHER VARIABLES"
+author: "Muigai Cyrus"
+date: "11/25/2022"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+#LOAD LIBRARY
+library(dplyr)
+```
+```{r}
+heart = read.csv("heart_failure_clinical_records_dataset.csv")
+head(heart)
+```
+```{r}
+heart$DEATH_EVENT <- as.factor(heart$DEATH_EVENT)
+str(heart)
+```
+
+```{r}
+summary(heart)
+```
+```{r}
+glimpse(heart)
+```
+##plot
+```{r}
+library(ggplot2)
+```
+
+```{r}
+df <-  heart
+ggplot(df, aes(x=anaemia, fill=DEATH_EVENT)) +
+  geom_bar(stat = "count",position = "stack", show.legend = FALSE) +
+  scale_x_discrete(labels = c("0 (False)", "1 (True)"))+
+  labs(x="Anaemia") +
+  theme_minimal(base_size = 12) +
+  geom_label(stat = "count", aes(label=..count..),position = position_stack(vjust = 0.5),
+             size=5)
+```
+```{r}
+#DIABETES
+df=heart
+ggplot(df, aes(x=diabetes, fill = DEATH_EVENT)) +
+  geom_bar(stat = "count", position = "stack", show.legend = FALSE) +
+  scale_x_discrete(labels = c("0 (False", "1 (True)")) +
+  labs(x="Anaemia") +
+  theme_minimal(base_size = 12) +
+  geom_label(stat = "count", aes(label = ..count..), position = position_stack(vjust = 0.5),
+             size=5)
+```
+```{r}
+#High Blood Pressure
+df=heart
+ggplot(df, aes(x=high_blood_pressure, fill = DEATH_EVENT)) +
+  geom_bar(stat = "count", position = "stack", show.legend = FALSE) +
+  scale_x_discrete(labels = c("0 (False", "1 (True)")) +
+  labs(x="Anaemia") +
+  theme_minimal(base_size = 12) +
+  geom_label(stat = "count", aes(label = ..count..), position = position_stack(vjust = 0.5),
+             size=5)
+```
+```{r}
+#sex
+df=heart
+ggplot(df, aes(x=sex, fill = DEATH_EVENT)) +
+  geom_bar(stat = "count", position = "stack", show.legend = FALSE) +
+  scale_x_discrete(labels = c("0 (False", "1 (True)")) +
+  labs(x="Anaemia") +
+  theme_minimal(base_size = 12) +
+  geom_label(stat = "count", aes(label = ..count..), position = position_stack(vjust = 0.5),
+             size=5)
+```
+```{r}
+#Smooking
+df=heart
+ggplot(df, aes(x=smoking, fill = DEATH_EVENT)) +
+  geom_bar(stat = "count", position = "stack", show.legend = FALSE) +
+  scale_x_discrete(labels = c("0 (False", "1 (True)")) +
+  labs(x="Anaemia") +
+  theme_minimal(base_size = 12) +
+  geom_label(stat = "count", aes(label = ..count..), position = position_stack(vjust = 0.5),
+             size=5)
+```
+```{r}
+#DEATH_EVENT
+df=heart
+ggplot(df, aes(x=DEATH_EVENT, fill = DEATH_EVENT)) +
+  geom_bar(stat = "count", position = "stack", show.legend = FALSE) +
+  scale_x_discrete(labels = c("0 (False", "1 (True)")) +
+  labs(x="Anaemia") +
+  theme_minimal(base_size = 12) +
+  geom_label(stat = "count", aes(label = ..count..), position = position_stack(vjust = 0.5),
+             size=5)
+```
+##BOXPLOT
+
+```{r}
+ggplot(df, aes(x=age, fill=DEATH_EVENT)) +
+  geom_boxplot() + coord_flip() + theme_minimal(base_size = 12) +
+  stat_boxplot( position = "dodge2")
+```
+```{r}
+#CREATININE pHOSPHOKINASE
+ggplot(df, aes(x=creatinine_phosphokinase, fill=DEATH_EVENT)) +
+  geom_boxplot() + coord_flip() + theme_minimal(base_size = 12) +
+  stat_boxplot( position = "dodge2")
+```
+```{r}
+##Ejection Fraction
+ggplot(df, aes(x=ejection_fraction, fill=DEATH_EVENT)) +
+  geom_boxplot() + coord_flip() + theme_minimal(base_size = 12) +
+  stat_boxplot( position = "dodge2")
+```
+```{r}
+##Platelets
+ggplot(df, aes(x=platelets, fill=DEATH_EVENT)) +
+  geom_boxplot() + coord_flip() + theme_minimal(base_size = 12) +
+  stat_boxplot( position = "dodge2")
+```
+```{r}
+#serum creatinine
+ggplot(df, aes(x=serum_creatinine, fill=DEATH_EVENT)) +
+  geom_boxplot() + coord_flip() + theme_minimal(base_size = 12) +
+  stat_boxplot( position = "dodge2")
+```
+##MODELLING PLAN
+(1). lOGISTIC REGRESSION
+```{r}
+#step1: train and test split
+# create train 75% and test 30%
+data = heart
+set.seed(5)
+idx=sample(1:nrow(data),3/4*nrow(data))
+train=data[idx,]
+test=data[-idx,]
+```
+
+```{r}
+#step2: Fitting logistic regression model to training data
+lr <- glm(DEATH_EVENT~.,family = binomial, data = train)
+summary(lr)
+```
+```{r}
+#step3: Make prediction on test set and print out confusion matrix
+preds <- predict(lr,test, type = "response")
+Predict<- rep(0,dim(test)[1])
+Predict[preds>=0.5]=1
+Actual <- test$DEATH_EVENT
+table(Predict, Actual)
+```
+As seen from above, we get a misclassification rate of 26.7% with our first draft of logistic regression model.
+Now, attempting to improve the model by removing non-significabt variables.
+```{r}
+#Fitting the reduced model
+lr <- glm(DEATH_EVENT ~age+ejection_fraction+serum_creatinine+serum_sodium+time, family = binomial, 
+          data=train)
+summary(lr)
+```
+```{r}
+#print out confusion matrix
+preds <- predict(lr,test, type = "response")
+Predict<- rep(0,dim(test)[1])
+Predict[preds>=0.5]=1
+Actual <- test$DEATH_EVENT
+table(Predict, Actual)
+```
+Model performance imporeved from 26.7% to misclassification rate of 22.7%
+
+Can we improve the model further by standardizing our variables?Get a subset of our data consisting
+of just the significant feature:
+```{r}
+```
+##.(2) DECISITION TREE
+```{r}
+##SPLIT the data into train and test
+data = heart
+library(sampling)
+idx=sampling::strata(heart, stratanames = c("DEATH_EVENT"),size = c(3/4*96, 3/4*203),method = "srswor")
+train=heart[idx$ID_unit, ]
+test=heart[-idx$ID_unit, ]
+```
+
+```{r}
+library(tree) # Decision Tree
+```
+```{r}
+tree.class <- tree(factor(DEATH_EVENT)~., train)
+summary(tree.class)
+```
+
+```{r}
+## Plot the Tree
+plot(tree.class)
+text(tree.class, pretty = 0)
+```
+
+```{r}
+## use the fitted(unpruned) tree to predict the death event of the test set:
+tree.pred <- predict(tree.class, test, type = "class")
+table(tree.pred,test$DEATH_EVENT)
+```
+```{r}
+#miscalculation rate
+print("misclassification rate")
+print(mean(tree.pred!=test$DEATH_EVENT))
+```
+```{r}
+print("The Accuracy:")
+mean(tree.pred==test$DEATH_EVENT)
+```
+```{r}
+#Using cross-validation to select the "best" number of nodes and prune the tree
+set.seed(3)
+cv.class <- cv.tree(tree.class, FUN = prune.misclass)
+plot(cv.class$size, cv.class$dev, type="b")
+```
+```{r}
+prune.class <- prune.misclass(tree.class, best = 2)
+plot(prune.class)
+text(prune.class, pretty=0)
+```
+```{r}
+prune.pred <- predict(prune.class,test,type = "class")
+table(prune.pred, test$DEATH_EVENT)
+```
+```{r}
+print("Misclassification Rate:")
+print(mean(prune.pred!=test$DEATH_EVENT))
+```
+```{r}
+print("Accuracy:")
+mean(prune.pred==test$DEATH_EVENT)
+```
+##K-FOLDS CROSS VALIDATION
+```{r}
+library(caret)
+```
+```{r}
+set.seed(10)
+folds <- createFolds(factor(data$DEATH_EVENT), k = 2)
+```
+
+```{r}
+misclassification_tree <- function(idx){
+  Train<-data[-idx,]
+  Test<-data[idx, ]
+  fit_tree <- tree(DEATH_EVENT~.,data=Train)
+  pred_tree <- predict(fit_tree, Test, data = Train)
+  return(1-(mean(pred_tree == Test$DEATH_EVENT)))
+}
+```
+
+
+```{r}
+set.seed(10)
+print("Classification Tree of Misclassification Rate")
+mis_rate_tree <- lapply(folds, misclassification_tree)
+print(mean(as.numeric(mis_rate_tree)))
+```
+```{r}
+print("Classification Tree Accuracy Rate:")
+1-mean(as.numeric(mis_rate_tree))
+```
+
+```{r}
+library(caret)
+model_fit3 <- train(DEATH_EVENT~., data = data, trControl = trainControl(method = "LOOCV"), 
+                    method = "ctree")
+model_fit3
+```
+
+(3). LINEAR DISCRIMINANT ANALYSIS
+```{r}
+print(unique(heart$DEATH_EVENT))
+```
+```{r}
+table(heart$DEATH_EVENT)
+```
+```{r}
+#Split the raw data to two parts; training and test
+library(sampling)
+set.seed(5)
+idx=sampling::strata(heart, stratanames = c("DEATH_EVENT"), size = c(3/4*96, 3/4*203), method = "srswor")
+train = heart[idx$ID_unit, ]
+test = heart[-idx$ID_unit, ]
+```
+
+```{r}
+library(MASS)
+```
+```{r}
+library(ISLR)
+```
+```{r}
+ida.fit <- lda(factor(DEATH_EVENT)~., data = train)
+ida.fit
+```
+```{r}
+plot(ida.fit)
+```
+
+```{r}
+ida.pred <- predict(ida.fit, test)
+table(ida.pred$class, test$DEATH_EVENT)
+```
+
+```{r}
+misclassification <- 1-mean(ida.pred$class==test$DEATH_EVENT)
+misclassification
+```
+
+To examine the appropriateness of the methodology, we calculate the cross-validation error
+```{r}
+library(boot)
+```
+
+```{r}
+set.seed(5)
+ida.fit1 <- train(factor(DEATH_EVENT)~., data = heart, trControl = trainControl(method = "LOOCV"),
+                  method = 'lda') ## Leave-one-out cross- validation (LOOCV)
+ida.fit2 <- train(factor(DEATH_EVENT)~., data=heart, trControl = trainControl(method = "cv", number = 10),
+                  method = "lda") ## 10-fold  cross-validation
+c(ida.fit1$results[2], ida.fit1$results[2])
+```
+##Stratified 10-fold cross- validation
+```{r}
+set.seed(5)
+folds <- createFolds(factor(heart$DEATH_EVENT), k=10)
+
+misclassification <- function(idx){
+  Train <- heart[-idx, ]
+  Test <- heart[idx, ]
+  fit <- lda(factor(DEATH_EVENT)~., data=Train)
+  pred <- predict(fit,Test)
+  return(1-mean(pred$class==Test$DEATH_EVENT))
+  
+}
+mis_rate <- lapply(folds, misclassification)
+mean(as.numeric(mis_rate))
+```
+```{r}
+##Then repeat the process for qda model
+qda.fit <- qda(factor(DEATH_EVENT)~., data = train)
+qda.fit
+```
+
+```{r}
+qda.pred <- predict(qda.fit, test)$class
+table(qda.pred, test$DEATH_EVENT)
+```
+```{r}
+misclassification = 1 - mean(qda.pred == test$DEATH_EVENT)
+misclassification
+```
+```{r}
+qda_fit1 <- train(factor(DEATH_EVENT)~., data = heart, trControl = trainControl(method = "LOOCV"), 
+                  method = "qda")
+qda_fit2 <- train(factor(DEATH_EVENT)~., data=heart, trControl = trainControl(method = "cv", number = 10), method='qda')
+c(qda_fit1$results[2], qda_fit2$results[2])
+```
+```{r}
+library(MASS)
+set.seed(5)
+folds <- createFolds(factor(heart$DEATH_EVENT), k=10)
+
+misclassification <- function(idx) {
+  Train <- heart[-idx,]
+  Test <- heart[idx, ]
+  fit <- qda(factor(DEATH_EVENT)~., data=Train)
+  pred <- predict(fit, Test)
+  return(1-mean(pred$class==Test$DEATH_EVENT))
+}
+mis_rate =lapply(folds, misclassification)
+mean(as.numeric(mis_rate))
+
+```
+
+##Main Results of the Analysis
+LOgistic Regression: ACCuracy: 
+Classification Tree: 
+LInear Disrimant Analysis: 
+
+
+ ###END
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
